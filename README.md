@@ -5,7 +5,7 @@ Mixed-Integer Programming Method for Jointly Clustering (Multiple) Linear Dynami
 This is the source code for the paper Joint Problems in Learning Multiple Dynamical Systems accepted by Allerton conference.
 
 ## Data
-ECG data: The test on electrocardiogram (ECG) data gives an inspiring application on guiding cardiologist’s diagnosis and treatment. The ECG data ECG5000 is a common dataset for evaluating methods for ECG  data,which has also been utilized by other papers on clustering with LDS assumptions. The original data comes from Physionet nd contains a 20-hour-long ECG for congestive heart failure. After processing, ECG5000 includes 500 sequences, where there are 292 normal samples and 208 samples of four types of heart failure. Each sequence contains a whole period of heartbeat with 140 time stamps
+ECG data: The test on electrocardiogram (ECG) data gives an inspiring application on guiding cardiologist’s diagnosis and treatment. ECG5000 includes 500 sequences, where there are 292 normal samples and 208 samples of four types of heart failure. Each sequence contains a whole period of heartbeat with 140 time stamps.
 
 ## Methods
 This project includes IF-Gurobi, IF, EM, FFT and DTW 5 methods, for more information refer to paper
