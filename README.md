@@ -81,7 +81,17 @@ The project uses [Cookiecutter](https://github.com/cookiecutter/cookiecutter) an
 ```
 
 ## Easily to Get Started
-If one would like to run experiments on local, try the notebooks on [Colab](https://colab.research.google.com/ ). If you use Mosek or Gurobi as a solver, a license is required. After applying for a license from Mosek, you can move "mosek.lic"  or "Gurobi.lic" under the setting path.
+If one would like to run experiments on local, try the notebooks on [Colab](https://colab.research.google.com/ ). If you use Mosek or Gurobi as a solver, a license is required. After applying for a license from Mosek and Gurobi, you can move "mosek.lic"  and "Gurobi.lic" under the setting path.
+
+### Set license file path
+```bash
+export GRB_LICENSE_FILE=/path/to/gurobi.lic
+```
+
+### install Bonmin
+```bash
+brew install bonmin
+```
 
 ### Dependencies
 1. Python>=3.9.7
