@@ -43,7 +43,7 @@ mixture-lds-experiments = "mixture_lds.experiments:main"
 dev = [
     "coverage==7.6.9",
     "pre-commit==4.1.0",
-    "pytest==8.3.4",
+    "pytest==9.0.2",
     "ruff==0.1.3",
     "mypy==1.19.1",
     "mkdocs-material==9.7.1",
