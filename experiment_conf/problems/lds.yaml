@@ -1,0 +1,13 @@
+name: lds
+dataset: synthetic_lds
+description: Synthetic LDS clustering benchmark.
+S_len: 10
+I_len: 16
+T_len: 20
+F_len: 2
+J: 5
+data_root: ./data/synthetic
+data_files:
+  - 2_2_test.npy
+  - 3_2_test.npy
+  - 4_2_test.npy

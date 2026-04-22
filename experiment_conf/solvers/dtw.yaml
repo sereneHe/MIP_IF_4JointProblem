@@ -1,0 +1,6 @@
+name: DTW
+method: DTW
+backend: tslearn
+metric: softdtw
+max_iter: 10
+random_state: 42

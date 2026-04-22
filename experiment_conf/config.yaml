@@ -1,0 +1,13 @@
+hydra:
+  launcher:
+    n_jobs: 1
+    prefer: processes
+
+experiment: MIP4Cluster
+tracking: false
+plot: true
+
+defaults:
+  - solvers: solver_if_gurobi
+  - problems: ecg
+  - _self_

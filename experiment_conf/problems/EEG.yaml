@@ -1,0 +1,62 @@
+name: EEG
+dataset: CHB-MIT Scalp EEG
+description: CHB-MIT seizure-vs-normal benchmark built from selected patients.
+
+# Raw CHB-MIT source. The builder accepts either uncompressed .edf or .edf.gz.
+raw_root: ./data/raw/EEG/archive.physionet.org/pn6/chbmit
+output_root: ./data/processed/EEG
+
+# Reproducible build settings.
+patients:
+  - chb01
+  - chb03
+  - chb05
+durations_sec: auto_min_max
+current_durations_sec:
+  - 27
+  - 120
+sampling_rate: 256
+channels: 23
+
+# Keep the same number of seizure events per patient by using the smallest
+# seizure count found across the selected patient summary files.
+events_per_patient: auto_min
+current_events_per_patient: 5
+normal_window_strategy: same_file_far_from_seizure
+normal_margin_sec: 300
+seizure_window: centered
+
+# Final packed files contain a dict with keys x, y, subjects, duration_sec,
+# sampling_rate.
+data_files:
+  eeg_27s: eeg-27s.npy
+  eeg_120s: eeg-120s.npy
+label_detail_files:
+  eeg_27s: centered_27s_seizure_tables/eeg-27s-label-details.csv
+  eeg_120s: centered_120s_seizure_tables/eeg-120s-label-details.csv
+metadata_files:
+  eeg_27s: centered_27s_seizure_tables/centered_27s_seizure_events_metadata.csv
+  eeg_120s: centered_120s_seizure_tables/centered_120s_seizure_events_metadata.csv
+
+# Shapes for the current patients/durations.
+shape:
+  eeg_27s:
+    x: [3, 10, 6912, 23]
+    y: [3, 10]
+  eeg_120s:
+    x: [3, 10, 30720, 23]
+    y: [3, 10]
+
+# Label convention in y: first events_per_patient samples are seizure, followed
+# by matched normal windows with the same sample_id.
+label_values:
+  seizure: 1
+  normal: 0
+label_order: [seizure, normal]
+
+# Rebuild command for the exact current data generation logic.
+build_module: mixture_lds.data.build_chbmit_eeg
+build_command: >-
+  uv run python -m mixture_lds.data.build_chbmit_eeg
+  --skip-download
+  --patients chb01 chb03 chb05

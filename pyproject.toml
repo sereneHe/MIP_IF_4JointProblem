@@ -9,7 +9,7 @@ description = "Joint Problems in Learning Multiple Dynamical Systems"
 authors = [
   { name = "Xiaoyu He", email = "your@email.com" },
 ]
-license = { file = "LICENSE" }
+license = { text = "Proprietary" }
 keywords = ["machine learning", "MLOps"]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -19,19 +19,29 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi==0.115.6",
+    "gurobipy>=13.0.1",
+    "idaes-pse>=2.11.0",
+    "mne>=1.12.1",
     "ncpol2sdpa==1.12.2",
+    "numpy==2.4.1",
     "pandas>=2.3.3",
-    "pyomo==6.6.2",
+    "pyomo==6.10.0",
+    "matplotlib>=3.10.8",
+    "scikit-learn>=1.8.0",
     "scipy>=1.17.0",
+    "tslearn>=0.8.1",
+    "h5py>=3.11.0",
     "torch==2.6.0",
     "typer==0.15.1",
     "uvicorn==0.34.0",
 ]
 
+[project.scripts]
+mixture-lds-experiments = "mixture_lds.experiments:main"
+
 [dependency-groups]
 dev = [
     "coverage==7.6.9",
-    "invoke==2.2.0",
     "pre-commit==4.1.0",
     "pytest==8.3.4",
     "ruff==0.1.3",

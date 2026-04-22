@@ -1,0 +1,10 @@
+name: ECG
+dataset: ECG5000
+description: ECG5000 normal-vs-abnormal benchmark.
+S_len: 1
+I_len: 15
+T_len: 140
+F_len: 1
+J: 2
+data_root: ./data/raw/ECG
+data_file: ECG5000_TRAIN.arff

@@ -145,6 +145,22 @@ ENV/
 env.bak/
 venv.bak/
 
+# Local licenses and solver credentials
+*.lic
+
+# Generated experiment outputs and large processed datasets
+Result_*/
+reports/*.npy
+data/processed/
+data/raw/EEG/
+
+# Local archive backups
+*_backup/
+notebooks/backup/
+
+# Python cache folders under archived legacy scripts
+old scripts/**/__pycache__/
+
 # Spyder project settings
 .spyderproject
 .spyproject

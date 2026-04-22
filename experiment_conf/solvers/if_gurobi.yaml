@@ -1,0 +1,8 @@
+name: IF-Gurobi
+method: IF-Gurobi
+backend: gurobi
+time_limit: 360
+target_mip_gap: 0.01
+regularization: 270
+thresh: 0.25
+seed_times: 5

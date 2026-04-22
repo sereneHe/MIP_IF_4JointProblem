@@ -1,0 +1,8 @@
+name: EM
+method: EM
+backend: bonmin
+time_limit: 360
+regularization: 270
+MTS: true
+norm: true
+thresh: 0.25

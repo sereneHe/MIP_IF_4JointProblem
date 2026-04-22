@@ -1,0 +1,8 @@
+experiment: MIP4Cluster
+tracking: false
+plot: false
+
+defaults:
+  - problems: EEG
+  - solvers: if_gurobi
+  - _self_
