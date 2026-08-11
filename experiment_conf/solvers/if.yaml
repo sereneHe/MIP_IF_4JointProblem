@@ -1,7 +1,7 @@
 name: IF
 method: IF
 backend: bonmin
-time_limit: 360
+time_limit: 1000
 regularization: 270
 MTS: true
 norm: true

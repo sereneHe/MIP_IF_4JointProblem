@@ -347,6 +347,124 @@ class DataPreprocessing:
 
         return X, y
 
+    def load_packed_eeg_data(self, packed_path: str | Path):
+        """Load packed EEG dict files such as eeg-27s.npy.
+
+        Expected packed format:
+            {"x": array with shape (patients, samples, timesteps, channels),
+             "y": array with shape (patients, samples)}
+        """
+        packed = np.load(packed_path, allow_pickle=True).item()
+        X = np.asarray(packed["x"], dtype=float)
+        y = np.asarray(packed["y"], dtype=int)
+        if X.ndim != 4:
+            raise ValueError(
+                f"Expected packed EEG x with shape (patients, samples, T, M), got {X.shape}"
+            )
+        if y.shape != X.shape[:2]:
+            raise ValueError(f"Expected packed EEG y with shape {X.shape[:2]}, got {y.shape}")
+        return X, y
+
+    def export_packed_eeg_3d(
+        self,
+        packed_path: str | Path,
+        output_path: str | Path,
+        data_path: str | Path | None = None,
+        label_path: str | Path | None = None,
+        label_csv_path: str | Path | None = None,
+    ):
+        """Flatten packed EEG from 4D to 3D and export reusable files.
+
+        Input:
+            x: (patients, samples, timesteps, channels)
+            y: (patients, samples)
+
+        Output:
+            x: (patients * samples, timesteps, channels)
+            y: (patients * samples,)
+        """
+        X, y = self.load_packed_eeg_data(packed_path)
+        X3 = X.reshape(X.shape[0] * X.shape[1], X.shape[2], X.shape[3])
+        y3 = y.reshape(X.shape[0] * X.shape[1])
+
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        np.save(output_path, {"x": X3, "y": y3})
+
+        if data_path is not None:
+            data_path = Path(data_path)
+            data_path.parent.mkdir(parents=True, exist_ok=True)
+            np.save(data_path, X3)
+        if label_path is not None:
+            label_path = Path(label_path)
+            label_path.parent.mkdir(parents=True, exist_ok=True)
+            np.save(label_path, y3)
+        if label_csv_path is not None:
+            label_csv_path = Path(label_csv_path)
+            label_csv_path.parent.mkdir(parents=True, exist_ok=True)
+            np.savetxt(label_csv_path, y3, delimiter=",", fmt="%d")
+
+        return {
+            "packed_3d_file": output_path,
+            "data_file": Path(data_path) if data_path is not None else None,
+            "label_file": Path(label_path) if label_path is not None else None,
+            "label_csv_file": Path(label_csv_path) if label_csv_path is not None else None,
+            "x": X3,
+            "y": y3,
+            "data_shape": X3.shape,
+            "label_shape": y3.shape,
+        }
+
+    def sample_eeg_3d(
+        self,
+        X,
+        y,
+        seed: int,
+        sample_count: int = 10,
+        time_points: int | None = 200,
+        balanced: bool = True,
+    ):
+        """Sample a 3D EEG subset by seed.
+
+        Returns ``sampled_X, sampled_y, sample_indices, t_start``. For binary
+        labels and an even sample_count, balanced=True draws half from each
+        class when possible.
+        """
+        X = np.asarray(X, dtype=float)
+        y = np.asarray(y, dtype=int).reshape(-1)
+        if X.ndim != 3:
+            raise ValueError(f"Expected 3D EEG x with shape (N, T, M), got {X.shape}")
+        if len(y) != len(X):
+            raise ValueError(f"Expected y length {len(X)}, got {len(y)}")
+
+        rng = np.random.default_rng(seed)
+        n_take = min(sample_count, len(X))
+        if balanced and len(np.unique(y)) == 2 and n_take >= 2:
+            classes = np.sort(np.unique(y))
+            per_class = n_take // 2
+            selected = []
+            for cls in classes:
+                cls_idx = np.where(y == cls)[0]
+                take = min(per_class, len(cls_idx))
+                selected.extend(rng.choice(cls_idx, size=take, replace=False).tolist())
+            remaining = n_take - len(selected)
+            if remaining > 0:
+                pool = np.setdiff1d(np.arange(len(X)), np.asarray(selected, dtype=int))
+                selected.extend(rng.choice(pool, size=remaining, replace=False).tolist())
+            sample_indices = np.asarray(selected, dtype=int)
+            rng.shuffle(sample_indices)
+        else:
+            sample_indices = rng.choice(len(X), size=n_take, replace=False)
+
+        if time_points is None or time_points >= X.shape[1]:
+            t_start = 0
+            sampled_X = X[sample_indices, :, :]
+        else:
+            t_start = int(rng.integers(0, X.shape[1] - time_points + 1))
+            sampled_X = X[sample_indices, t_start : t_start + time_points, :]
+        sampled_y = y[sample_indices]
+        return sampled_X, sampled_y, sample_indices, t_start
+
     def load_chbmit_seizure_prediction_data(
         self,
         raw_root: str | Path,

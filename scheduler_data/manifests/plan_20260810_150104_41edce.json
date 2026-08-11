@@ -1,0 +1,24 @@
+{
+  "plan_id": "plan_20260810_150104_41edce",
+  "plan_name": "ECG test",
+  "script": "/Users/xiaoyuhe/Joint-Problem/scripts/run_ecg.sh",
+  "created_at": "2026-08-10T15:01:04.833386+00:00",
+  "total_estimated_seconds": 600.0,
+  "notes": "解析到 1 个独立 run。",
+  "parse_status": "ok",
+  "runs": [
+    {
+      "run_id": "\"if_gurobi\"|unknown|default|0",
+      "method": "\"if_gurobi\"",
+      "dataset": "unknown",
+      "param_group": "default",
+      "seed": 0,
+      "estimated_seconds": 600.0,
+      "command": "uv run python -m mixture_lds.experiments --multirun --config-name=config-cluster experiment='MIP4Cluster' ${CMD} \\ problem=\"ECG\" \\ result_dir=\"Result_ECG\" \\ solver=\"if_gurobi\" \\ solver.regularization=\"270\" \\ solver.thresh=\"0.25\" \\ seed=\"30\"",
+      "env": {},
+      "result_csv": "",
+      "mlflow_run_id": "",
+      "mlflow_experiment": ""
+    }
+  ]
+}

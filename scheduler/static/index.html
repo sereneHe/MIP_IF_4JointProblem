@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>实验调度中心</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card2: #273449;
+    --border: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --green: #22c55e;
+    --yellow: #eab308;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    padding: 24px;
+  }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .card h2 { font-size: 15px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge.green { background: rgba(34,197,94,.15); color: var(--green); }
+  .badge.yellow { background: rgba(234,179,8,.15); color: var(--yellow); }
+  .badge.red { background: rgba(239,68,68,.15); color: var(--red); }
+  .badge.blue { background: rgba(59,130,246,.15); color: var(--blue); }
+  .badge.gray { background: rgba(148,163,184,.15); color: var(--muted); }
+  .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+  .row .k { color: var(--muted); }
+  .row .v { text-align: right; word-break: break-all; }
+  .progress { height: 8px; background: var(--card2); border-radius: 999px; overflow: hidden; margin: 8px 0; }
+  .progress > div { height: 100%; background: var(--blue); border-radius: 999px; }
+  .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  button {
+    background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer;
+  }
+  button:hover { background: var(--border); }
+  button.danger { border-color: var(--red); color: var(--red); }
+  button.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  input, select {
+    background: var(--card2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px; font-size: 13px; width: 100%;
+  }
+  .form-row { margin-bottom: 10px; }
+  .form-row label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .section-title { font-size: 16px; margin: 24px 0 12px; color: var(--text); }
+  .integrity { font-size: 13px; }
+  .integrity .status { font-weight: 700; }
+  .pending { background: rgba(234,179,8,.08); border: 1px solid rgba(234,179,8,.3); border-radius: 8px; padding: 8px 12px; margin: 6px 0; font-size: 13px; }
+  .log { background: #0b1220; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-family: monospace; font-size: 11px; white-space: pre-wrap; max-height: 200px; overflow: auto; margin-top: 10px; }
+  .meta { color: var(--muted); font-size: 12px; }
+  .flex { display: flex; gap: 12px; align-items: center; }
+  .grow { flex: 1; }
+</style>
+</head>
+<body>
+  <h1>实验调度中心</h1>
+  <div class="subtitle">4 个固定槽位 · 本地 2 + 服务器 2 · 每槽上限 24 小时 · 每 10 秒自动刷新</div>
+
+  <!-- Load plan -->
+  <div class="card" style="margin-bottom:20px;">
+    <h2>加载实验计划</h2>
+    <div class="form-row">
+      <label>脚本路径 (.sh)</label>
+      <input id="scriptPath" placeholder="/path/to/run_experiments.sh">
+    </div>
+    <div class="form-row">
+      <label>计划名称（可选）</label>
+      <input id="planName" placeholder="例如：ER-4-0 多 seed 实验">
+    </div>
+    <div class="form-row">
+      <label>结果 CSV 路径（可选）</label>
+      <input id="resultCsv" placeholder="/path/to/results.csv">
+    </div>
+    <div class="form-row">
+      <label>MLflow 实验名（可选）</label>
+      <input id="mlflowExp" placeholder="default">
+    </div>
+    <div class="actions">
+      <button class="primary" onclick="loadPlan()">解析并生成分片计划</button>
+      <button class="primary" onclick="startPlan()">批准并启动</button>
+      <button onclick="refresh()">刷新状态</button>
+      <button class="danger" onclick="stopPlan()">停止全部</button>
+    </div>
+    <div id="planInfo" class="meta" style="margin-top:10px;"></div>
+  </div>
+
+  <!-- Slot cards -->
+  <div class="section-title">运行槽位</div>
+  <div id="slots" class="grid"></div>
+
+  <!-- Integrity -->
+  <div class="section-title">结果表完整性</div>
+  <div id="integrity" class="card"></div>
+
+  <!-- Pending items -->
+  <div class="section-title">待处理事项</div>
+  <div id="pending"></div>
+
+  <!-- Report -->
+  <div class="section-title">任务报告</div>
+  <div id="report" class="card"></div>
+
+<script>
+const SLOT_LABEL = {"local-1":"本地 1","local-2":"本地 2","server-1":"服务器 1","server-2":"服务器 2"};
+
+async function api(path, body) {
+  const opts = body ? {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)} : {};
+  const r = await fetch(path, opts);
+  return r.json();
+}
+
+function fmtDur(sec) {
+  if (!sec) return "-";
+  sec = Math.round(sec);
+  if (sec < 60) return sec + " 秒";
+  const m = Math.floor(sec/60), s = sec%60;
+  if (m < 60) return m + " 分 " + s + " 秒";
+  const h = Math.floor(m/60), mm = m%60;
+  if (h < 24) return h + " 小时 " + mm + " 分";
+  const d = Math.floor(h/24), hh = h%24;
+  return d + " 天 " + hh + " 小时 " + mm + " 分";
+}
+
+function fmtTime(iso) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  return d.toLocaleString("zh-CN", {hour12:false});
+}
+
+function healthBadge(h) {
+  const map = {"运行正常":"green","疑似卡住":"yellow","已停止":"gray","排队中":"blue","错误":"red"};
+  const cls = map[h] || "gray";
+  return `<span class="badge ${cls}">${h}</span>`;
+}
+
+function statusBadge(s) {
+  const map = {"running":"green","queued":"blue","pending":"gray","done":"green","stopped":"gray","error":"red"};
+  const cls = map[s] || "gray";
+  return `<span class="badge ${cls}">${s}</span>`;
+}
+
+function renderSlots(slots) {
+  const el = document.getElementById("slots");
+  if (!slots || !slots.length) { el.innerHTML = '<div class="card meta">尚未加载计划。</div>'; return; }
+  el.innerHTML = slots.map(s => {
+    const label = SLOT_LABEL[s.slot] || s.slot;
+    const done = s.integrity ? s.integrity.present : 0;
+    const total = s.integrity ? s.integrity.expected_total : s.run_count;
+    const pct = total ? Math.round(done/total*100) : 0;
+    const runIds = (s.run_ids||[]).slice(0,3).join(", ") + ((s.run_ids||[]).length>3 ? " …" : "");
+    return `
+    <div class="card">
+      <h2>${label} ${statusBadge(s.status)} ${healthBadge(s.health)}</h2>
+      <div class="row"><span class="k">当前批次</span><span class="v">${runIds || "-"}</span></div>
+      <div class="row"><span class="k">已完成</span><span class="v">${done} / ${total}</span></div>
+      <div class="progress"><div style="width:${pct}%"></div></div>
+      <div class="row"><span class="k">预计结束</span><span class="v">${fmtTime(s.estimated_end)}</span></div>
+      <div class="row"><span class="k">预计时长</span><span class="v">${fmtDur(s.estimated_seconds)}</span></div>
+      <div class="row"><span class="k">PID / Job ID</span><span class="v">${s.pid || "-"} / ${s.job_id || "-"}</span></div>
+      <div class="row"><span class="k">walltime</span><span class="v">${s.walltime || "-"}</span></div>
+      <div class="row"><span class="k">MLflow 实验</span><span class="v">${s.mlflow_experiment || "-"}</span></div>
+      <div class="row"><span class="k">结果表</span><span class="v">${s.result_csv || "-"}</span></div>
+      <div class="row"><span class="k">日志</span><span class="v">${s.log_path || "-"}</span></div>
+      ${s.errors && s.errors.length ? `<div class="row"><span class="k" style="color:var(--red)">错误</span><span class="v" style="color:var(--red)">${s.errors.join("; ")}</span></div>` : ""}
+      <div class="actions">
+        <button onclick="stopShard('${s.slot}')">停止本批次</button>
+        <button onclick="viewLog('${s.slot}')">查看日志</button>
+      </div>
+      <div id="log-${s.slot}" class="log" style="display:none"></div>
+    </div>`;
+  }).join("");
+}
+
+function renderIntegrity(integrity) {
+  const el = document.getElementById("integrity");
+  if (!integrity || !integrity.status) { el.innerHTML = '<div class="meta">尚未加载计划。</div>'; return; }
+  const cls = {"完整":"green","进行中":"blue","异常缺失":"yellow","无效结果":"red","未知":"gray"}[integrity.status] || "gray";
+  el.innerHTML = `
+    <div class="integrity">
+      <div class="row"><span class="k">状态</span><span class="v"><span class="badge ${cls}">${integrity.status}</span></span></div>
+      <div class="row"><span class="k">详情</span><span class="v">${integrity.detail || "-"}</span></div>
+      <div class="row"><span class="k">预期 / 已有</span><span class="v">${integrity.expected_total || 0} / ${integrity.present || 0}</span></div>
+      <div class="row"><span class="k">缺失</span><span class="v">${integrity.missing || 0}</span></div>
+      <div class="row"><span class="k">CSV 行数</span><span class="v">${integrity.row_count || 0}</span></div>
+    </div>`;
+}
+
+function renderPending(items) {
+  const el = document.getElementById("pending");
+  if (!items || !items.length) { el.innerHTML = '<div class="card meta">无待处理事项。</div>'; return; }
+  el.innerHTML = items.map(i => `<div class="pending">⚠️ [${i.type}] ${i.detail}</div>`).join("");
+}
+
+function renderReport(report) {
+  const el = document.getElementById("report");
+  if (!report || !report.plan_id) { el.innerHTML = '<div class="meta">任务开始后自动生成报告。</div>'; return; }
+  const risks = (report.risks||[]).map(r => `<div class="row"><span class="k">风险</span><span class="v">${r}</span></div>`).join("");
+  el.innerHTML = `
+    <div class="row"><span class="k">计划</span><span class="v">${report.plan_name}</span></div>
+    <div class="row"><span class="k">脚本</span><span class="v">${report.script}</span></div>
+    <div class="row"><span class="k">总 runs</span><span class="v">${report.total_runs}（已完成 ${report.done_runs}）</span></div>
+    <div class="row"><span class="k">结果 CSV</span><span class="v">${report.result_csv || "-"}</span></div>
+    <div class="row"><span class="k">MLflow</span><span class="v">${report.mlflow_uri || "-"}</span></div>
+    <div class="row"><span class="k">下次检查</span><span class="v">${report.next_check_in_seconds} 秒后</span></div>
+    ${risks}
+    <div class="row"><span class="k">备注</span><span class="v">${report.notes || "-"}</span></div>`;
+}
+
+async function refresh() {
+  const st = await api("/api/refresh");
+  renderSlots(st.slots);
+  renderIntegrity(st.integrity);
+  renderPending(st.pending_items);
+  renderReport(st.report);
+}
+
+async function loadPlan() {
+  const scriptPath = document.getElementById("scriptPath").value.trim();
+  const planName = document.getElementById("planName").value.trim();
+  if (!scriptPath) { alert("请输入脚本路径"); return; }
+  const r = await api("/api/load_plan", {script_path:scriptPath, plan_name:planName});
+  document.getElementById("planInfo").innerHTML =
+    `计划 ${r.plan_id} · 解析状态 ${r.parse_status} · ${r.total_runs} 个 run · 预计 ${fmtDur(r.total_estimated_seconds)}<br>${r.notes || ""}`;
+  await refresh();
+}
+
+async function startPlan() {
+  const resultCsv = document.getElementById("resultCsv").value.trim();
+  const mlflowExp = document.getElementById("mlflowExp").value.trim();
+  await api("/api/start", {result_csv:resultCsv, mlflow_experiment:mlflowExp});
+  await refresh();
+}
+
+async function stopShard(slot) {
+  await api("/api/stop_shard", {slot});
+  await refresh();
+}
+
+async function stopPlan() {
+  await api("/api/stop_plan");
+  await refresh();
+}
+
+async function viewLog(slot) {
+  const el = document.getElementById("log-" + slot);
+  if (el.style.display === "none") {
+    const r = await api("/api/logs/" + slot);
+    el.textContent = r.content || "(空)";
+    el.style.display = "block";
+  } else {
+    el.style.display = "none";
+  }
+}
+
+// Auto refresh every 10 s
+setInterval(refresh, 10000);
+refresh();
+</script>
+</body>
+</html>

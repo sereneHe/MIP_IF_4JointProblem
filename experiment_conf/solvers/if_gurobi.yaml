@@ -1,7 +1,7 @@
 name: IF-Gurobi
 method: IF-Gurobi
 backend: gurobi
-time_limit: 360
+time_limit: 1000
 target_mip_gap: 0.01
 regularization: 270
 thresh: 0.25
